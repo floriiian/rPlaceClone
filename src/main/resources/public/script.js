@@ -1,33 +1,91 @@
 
-// Connect to the WebSocket server at ws://localhost:7070/websocket
+const TRUE_REGEX= /^\s*(true|1|on)\s*$/i;
 const socket = new WebSocket("ws://localhost:8888/websocket");
 
-// Triggered when the WebSocket connection is successfully established
+
+let lastDrawTime = null;
+let selectedColor = "#000"; // Save selected color
+
+// TODO: Save last coordinates.+
+let lastRequestedColor;
+let lastRequestedX;
+let lastRequestedY;
+
+/* Handlers*/
+
 socket.onopen = function () {
     console.log("Connected to WebSocket server");
 };
 
-// Triggered when a message is received from the WebSocket server
-socket.onmessage = function (event) {
-    const messageElement = document.createElement("p");
-    messageElement.textContent = "Message: " + event.data;
-    document.getElementById("messages").appendChild(messageElement);
-};
-
-// Triggered when the WebSocket connection is closed
 socket.onclose = function () {
     console.log("Disconnected from WebSocket server");
 };
 
-// Triggered when an error occurs on the WebSocket
 socket.onerror = function (error) {
     console.log("WebSocket Error: " + error);
 };
 
-// Function to send a message to the WebSocket server
-function sendMessage() {
-    socket.send("Hello, server!");
+socket.onMessage = function (event) {
+    console.log(event.data);
+
+    let jsonData = JSON.parse(event.data);
+    let type = jsonData.type;
+
+    if(type === null){
+        return;
+    }
+    switch(type){
+        case "canvasResponse":
+            // Trigger repaint of canvas;
+            loadCanvas(jsonData.description);
+            break;
+        case "canvasUpdate":
+            drawRect(jsonData.description);
+            break;
+        case "drawResponse":
+            if(TRUE_REGEX.test(jsonData.description)) {
+                drawRect(lastRequestedX, lastRequestedY, lastRequestedColor, 1, 1);
+            }
+            break;
+    }
 }
+
+/* Functions used by the handlers */
+
+function sendDrawRequest(userid, color, x, y){
+
+    if(!canDrawAgain()){
+        console.log("Draw request failed: Cooldown is still active.");
+        return false;
+    }
+
+    lastRequestedColor = selectedColor;
+
+    const request = {
+        color: color,
+        position: [x, y],
+        userid: userid,
+        date: Date.now(),
+    };
+
+    socket.send(JSON.stringify(request))
+}
+
+function canDrawAgain(){
+    return lastDrawTime === null ||  new Date().getSeconds() <= lastDrawTime;
+}
+
+function loadCanvas(canvasData) {
+    console.log(JSON.parse(canvasData));
+}
+
+function drawRect(x, y, width, height, color) {
+    ctx.fillStyle = color
+    ctx.fillRect( x, y, width, height )
+}
+
+/* Canvas */
+
 canvas = document.getElementById("canvas");
 let ctx = canvas.getContext('2d')
 
@@ -41,10 +99,11 @@ document.addEventListener('click', function (e) {
 
     console.log(Math.round(canvasRelativeX), Math.round(canvasRelativeY))
 
-    drawRect(canvasRelativeX,canvasRelativeY, 1, 1)
-})
+    sendDrawRequest(
+        null,
+        selectedColor,
+        Math.round(canvasRelativeX),
+        Math.round(canvasRelativeY),
+    )
 
-function drawRect(x, y, width, height) {
-    ctx.fillStyle = "rgb(200 0 0)";
-    ctx.fillRect( x, y, width, height )
-}
+})

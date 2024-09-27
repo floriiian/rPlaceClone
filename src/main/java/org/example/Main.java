@@ -25,12 +25,15 @@ public class Main {
         // WebSocket endpoints
         app.ws("/websocket", ws -> {
             ws.onConnect(ctx -> {
+                // TODO: In the future check the url params and create a new session
+                //       if that url doesn't exist already, if it does connect to it
                 System.out.println("User: " + ctx.sessionId() + "connected.");
                 users.add(ctx); // Add the user to the set
             });
 
             ws.onMessage(ctx -> {
                 System.out.println("Received message: " + ctx.message());
+                
                 // Broadcast the message to all users
                 for (WsContext user : users) {
                     user.send("Handles message" + ctx.message());
