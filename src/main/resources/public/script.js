@@ -2,7 +2,6 @@
 const TRUE_REGEX= /^\s*(true|1|on)\s*$/i;
 const socket = new WebSocket("ws://localhost:8888/websocket");
 
-
 let lastDrawTime = null;
 let selectedColor = "#000"; // Save selected color
 
@@ -10,6 +9,12 @@ let selectedColor = "#000"; // Save selected color
 let lastRequestedColor;
 let lastRequestedX;
 let lastRequestedY;
+
+const canvasCode = new URLSearchParams(document.location.search).get("canvasCode");
+
+if(canvasCode != null){
+    console.log(canvasCode);
+}
 
 /* Handlers*/
 
@@ -35,8 +40,10 @@ socket.onMessage = function (event) {
         return;
     }
     switch(type){
+        case "sessionResponse":
+            console.log(jsonData);
+            break;
         case "canvasResponse":
-            // Trigger repaint of canvas;
             loadCanvas(jsonData.description);
             break;
         case "canvasUpdate":
@@ -61,14 +68,21 @@ function sendDrawRequest(userid, color, x, y){
 
     lastRequestedColor = selectedColor;
 
-    const request = {
+    const drawRequest = {
+        requestType: "draw",
         color: color,
         position: [x, y],
-        userid: userid,
-        date: Date.now(),
+        date: Math.floor(new Date().getTime() / (1000 * 60))
     };
 
-    socket.send(JSON.stringify(request))
+    socket.send(JSON.stringify(drawRequest))
+}
+
+function createNewSession(){
+    const request = {
+        requestType: "session",
+    };
+    socket.send(JSON.stringify(request));
 }
 
 function canDrawAgain(){
@@ -105,5 +119,7 @@ document.addEventListener('click', function (e) {
         Math.round(canvasRelativeX),
         Math.round(canvasRelativeY),
     )
-
 })
+
+setTimeout(createNewSession, 5000);
+
