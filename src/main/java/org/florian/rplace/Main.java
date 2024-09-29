@@ -35,10 +35,7 @@ public class Main {
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
             ws.onConnect(ctx -> {
-                // TODO: In the future check the url params and create a new session
-                //       if that url doesn't exist already, if it does connect to it
-
-                System.out.println("User: " + ctx.sessionId() + " connected.");
+                LOGGER.debug("User: {} connected.", ctx.sessionId());
                 USERS.add(ctx); // Add the user to the set
             });
 
@@ -70,7 +67,7 @@ public class Main {
                                 ctx.send(OBJECT_MAPPER.writeValueAsString(
                                         new CanvasResponse("canvasResponse", canvasContent))
                                 );
-                                LOGGER.debug("Loaded Canvas for: " + ctx.sessionId());
+                                LOGGER.debug("Loaded Canvas for: {}", ctx.sessionId());
                             }
                             catch (JsonProcessingException e) {
                                 LOGGER.debug("Canvas request failed", e);
@@ -136,15 +133,29 @@ public class Main {
             });
 
             ws.onClose(ctx -> {
-                System.out.println("User disconnected with session ID: " + ctx.sessionId());
-                USERS.remove(ctx); // Remove the user from the set
+                for(CanvasSession session : ACTIVE_CANVAS_SESSIONS) {
+
+                    String participantID = ctx.sessionId();
+                    List<String> participants = session.getSessionParticipants();
+
+                    if(participants.contains(participantID)) {
+                        session.removeParticipant(participantID);
+                        LOGGER.debug("Removed: {} from session.", participantID);
+                    }
+                    else if(session.ownerID.equals(participantID)) {
+                        // TODO: Send popup to announce session termination
+                        // ctx.send(OBJECT_MAPPER.writeValueAsString("SESSION_CLOSED"));
+                        terminateCanvasSession(session);
+                    }
+                }
+                USERS.remove(ctx);
             });
 
             ws.onError(ctx -> {
-                System.out.println("An error occurred: " + ctx.error());
+                LOGGER.debug("An error occurred: {}", ctx.error());
             });
         });
-        // app.get("/", ctx -> ctx.result("WebSocket server is running on ws://localhost:7070/websocket"));
+        // app.get("/", ctx -> ctx.result("WebSocket server is running on ws://localhost:4124141221124/websocket"));
 
     }
 
@@ -166,6 +177,11 @@ public class Main {
             }
         }
         return null;
+    }
+
+    public static void terminateCanvasSession(CanvasSession session){
+        LOGGER.debug("Removing session: {}", session.canvasCode);
+        ACTIVE_CANVAS_SESSIONS.remove(session);
     }
 
 
