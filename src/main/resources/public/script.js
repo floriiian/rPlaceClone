@@ -9,6 +9,9 @@ const canvasCode = new URLSearchParams(document.location.search).get("canvasCode
 const interval = 20000;
 let pingInterval;
 
+const canvasContainer = document.getElementById("canvas-container");
+const preLoader = document.getElementById("preloader_img");
+
 /* Handlers*/
 
 socket.onopen = function () {
@@ -96,12 +99,10 @@ function sendDrawRequest(userid, color, x, y){
 }
 
 function sendCanvasRequest(){
-
     const canvasRequest = {
         requestType: "canvas",
         canvasCode: canvasCode,
     };
-
     socket.send(JSON.stringify(canvasRequest))
 }
 
@@ -117,9 +118,7 @@ function canDrawAgain(){
 }
 
 function loadCanvas(canvasData) {
-
     const positions = JSON.parse(canvasData.canvasData);
-
     try{
         for(let i = 0; i < positions.length; i++) {
             let data = positions[i];
@@ -129,6 +128,8 @@ function loadCanvas(canvasData) {
 
             drawRect(x, y, color);
         }
+        preLoader.style.display = "none";
+        canvasContainer.style.display = "fixed";
     }
     catch(e){
         console.log("Could not load pixel: " + e);
@@ -146,22 +147,24 @@ canvas = document.getElementById("canvas");
 let ctx = canvas.getContext('2d')
 
 canvas.addEventListener('click', function (e) {
-
     const rect = canvas.getBoundingClientRect();
+
     const elementRelativeX = e.clientX - rect.left;
     const elementRelativeY = e.clientY - rect.top;
-    const canvasRelativeX = elementRelativeX * canvas.width / rect.width;
-    const canvasRelativeY = elementRelativeY * canvas.height / rect.height;
 
-    console.log(Math.round(canvasRelativeX), Math.round(canvasRelativeY))
+    const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
+    const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
+
+    console.log(Math.round(canvasRelativeX), Math.round(canvasRelativeY));
 
     sendDrawRequest(
         null,
         selectedColor,
         Math.round(canvasRelativeX),
-        Math.round(canvasRelativeY),
-    )
-})
+        Math.round(canvasRelativeY)
+    );
+});
+
 
 window.addEventListener('load', function() {
     if(canvasCode != null){
@@ -172,4 +175,5 @@ window.addEventListener('load', function() {
         }, 5000);
     }
 })
+
 

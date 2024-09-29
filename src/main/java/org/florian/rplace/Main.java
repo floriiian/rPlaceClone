@@ -70,8 +70,7 @@ public class Main {
                                 ctx.send(OBJECT_MAPPER.writeValueAsString(
                                         new CanvasResponse("canvasResponse", canvasContent))
                                 );
-
-                                LOGGER.debug(canvasContent);
+                                LOGGER.debug("Loaded Canvas for: " + ctx.sessionId());
                             }
                             catch (JsonProcessingException e) {
                                 LOGGER.debug("Canvas request failed", e);
