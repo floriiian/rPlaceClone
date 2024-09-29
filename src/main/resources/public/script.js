@@ -14,24 +14,25 @@ const canvasCode = new URLSearchParams(document.location.search).get("canvasCode
 
 if(canvasCode != null){
     console.log(canvasCode);
+}else{
+    setTimeout(createNewSession, 5000);
 }
 
 /* Handlers*/
 
 socket.onopen = function () {
-    console.log("Connected to WebSocket server");
+    console.log("Connected to Canvas: " + canvasCode);
 };
 
 socket.onclose = function () {
-    console.log("Disconnected from WebSocket server");
+    console.log("Disconnected from Canvas" + canvasCode);
 };
 
 socket.onerror = function (error) {
-    console.log("WebSocket Error: " + error);
+    console.log("Canvas-socket Error: " + error);
 };
 
 socket.onMessage = function (event) {
-    console.log(event.data);
 
     let jsonData = JSON.parse(event.data);
     let type = jsonData.type;
@@ -39,19 +40,35 @@ socket.onMessage = function (event) {
     if(type === null){
         return;
     }
+
     switch(type){
+        /* Initializes a session, if not connecting to an existing one.*/
         case "sessionResponse":
             console.log(jsonData);
             break;
+        /* Receives canvas that needs to be drawn*/
         case "canvasResponse":
+            console.log(jsonData)
             loadCanvas(jsonData.description);
             break;
+        /* Updates the canvas, whenever a new pixel is placed.*/
         case "canvasUpdate":
-            drawRect(jsonData.description);
+            drawRect(
+                jsonData.position[0]
+                ,jsonData.position[1],
+                1, 1,
+                jsonData.color
+            );
             break;
+        /* Responds to draw request sent by client*/
         case "drawResponse":
             if(TRUE_REGEX.test(jsonData.description)) {
-                drawRect(lastRequestedX, lastRequestedY, lastRequestedColor, 1, 1);
+                drawRect(
+                    lastRequestedX,
+                    lastRequestedY,
+                    1, 1,
+                    lastRequestedColor
+                );
             }
             break;
     }
@@ -121,5 +138,4 @@ document.addEventListener('click', function (e) {
     )
 })
 
-setTimeout(createNewSession, 5000);
 

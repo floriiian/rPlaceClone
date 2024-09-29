@@ -19,17 +19,6 @@ public class CanvasSession {
         this.participants.add(ownerID);
     }
 
-    public List<String> getSessionParticipants(){
-        return this.participants;
-    }
-
-    public void addParticipant(String participantID){
-        this.participants.add(participantID);
-    }
-
-    public void removeParticipant(String participantID){
-        this.participants.remove(participantID);
-    }
 
     public void addPixelToCanvas(int[] pixelPosition, String color, String participantID){
 
@@ -51,5 +40,17 @@ public class CanvasSession {
         if(!pixelReplaced){
             canvasData.add(new CanvasPixel(participantID, pixelPosition, color));
         }
+    }
+
+    public List<String> getSessionParticipants(){
+        return this.participants;
+    }
+
+    public void addParticipant(String participantID){
+        this.participants.add(participantID);
+    }
+
+    public void removeParticipant(String participantID){
+        this.participants.remove(participantID);
     }
 }

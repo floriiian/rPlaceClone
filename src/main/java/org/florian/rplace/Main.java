@@ -4,15 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import io.javalin.websocket.WsContext;
 
+import io.javalin.websocket.WsMessageContext;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.florian.rplace.json.CanvasRequest;
-import org.florian.rplace.json.DrawRequest;
-import org.florian.rplace.json.SessionResponse;
-import org.florian.rplace.json.DrawResponse;
+import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
 
 import java.util.*;
@@ -55,10 +54,7 @@ public class Main {
                 switch(requestType) {
 
                     case "canvas":
-                        CanvasRequest canvasRequest = OBJECT_MAPPER.treeToValue(jsonData, CanvasRequest.class);
-
                         session = getCanvasSession(ctx.sessionId());
-
                         if(session != null) {
                             try {
                                 String canvasContent = OBJECT_MAPPER.writeValueAsString(session.canvasData);
@@ -78,19 +74,39 @@ public class Main {
                         session = getCanvasSession(ctx.sessionId());
 
                         if(session != null) {
-                            session.addPixelToCanvas(
-                                    drawRequest.position(),
-                                    drawRequest.color(),
-                                    ctx.sessionId()
-                            );
-                            ctx.send(OBJECT_MAPPER.writeValueAsString(
-                                    new DrawResponse("drawResponse", true))
-                            );
+                            int[] position = drawRequest.position();
+                            String color = drawRequest.color();
+
+                            if(position == null || color == null) {
+                                cancelDrawResponse(ctx);
+                                return;
+                            }
+                            try{
+                                session.addPixelToCanvas(
+                                        position,
+                                        color,
+                                        ctx.sessionId()
+                                );
+                                ctx.send(OBJECT_MAPPER.writeValueAsString(
+                                        new DrawResponse("drawResponse", true))
+                                );
+                                for(WsContext user :  USERS){
+                                    user.send(
+                                            OBJECT_MAPPER.writeValueAsString(
+                                                    new DrawUpdate("drawResponse", position, color)
+                                        )
+                                    );
+                                }
+                            }
+                            catch (Error e){
+                                LOGGER.debug(e);
+
+                                cancelDrawResponse(ctx);
+                                return;
+                            }
                         }
                         else {
-                            ctx.send(OBJECT_MAPPER.writeValueAsString(
-                                    new DrawResponse("drawResponse", false))
-                            );
+                            cancelDrawResponse(ctx);
                         }
                         break;
 
@@ -156,5 +172,11 @@ public class Main {
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('A', 'Z').get();
         return generator.generate(8);
+    }
+
+    private static void cancelDrawResponse(WsMessageContext ctx) throws JsonProcessingException {
+        ctx.send(OBJECT_MAPPER.writeValueAsString(
+                new DrawResponse("drawResponse", false))
+        );
     }
 }
