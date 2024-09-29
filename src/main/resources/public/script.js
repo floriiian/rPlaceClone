@@ -1,38 +1,38 @@
 
-const TRUE_REGEX= /^\s*(true|1|on)\s*$/i;
-const socket = new WebSocket("ws://localhost:8888/websocket");
+const socket = new WebSocket("ws://localhost:8888/canvas");
+const startURL = "http://localhost:63342/rPlaceClone/src/main/resources/public/client.html"
 
 let lastDrawTime = null;
 let selectedColor = "#000"; // Save selected color
-
-// TODO: Save last coordinates.+
-let lastRequestedColor;
-let lastRequestedX;
-let lastRequestedY;
-
 const canvasCode = new URLSearchParams(document.location.search).get("canvasCode");
 
-if(canvasCode != null){
-    console.log(canvasCode);
-}else{
-    setTimeout(createNewSession, 5000);
-}
+const interval = 20000;
+let pingInterval;
 
 /* Handlers*/
 
 socket.onopen = function () {
     console.log("Connected to Canvas: " + canvasCode);
+
+    pingInterval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send("0");
+        }
+    }, interval);
+
 };
 
 socket.onclose = function () {
-    console.log("Disconnected from Canvas" + canvasCode);
+
+    clearInterval(pingInterval);
+    console.log("Disconnected from Canvas: " + canvasCode);
 };
 
 socket.onerror = function (error) {
     console.log("Canvas-socket Error: " + error);
 };
 
-socket.onMessage = function (event) {
+socket.onmessage = function (event) {
 
     let jsonData = JSON.parse(event.data);
     let type = jsonData.type;
@@ -44,32 +44,34 @@ socket.onMessage = function (event) {
     switch(type){
         /* Initializes a session, if not connecting to an existing one.*/
         case "sessionResponse":
-            console.log(jsonData);
+
+            let canvasCode = jsonData.canvasCode;
+
+            if(canvasCode == null){
+                return;
+            }
+
+            let url = new URL(startURL);
+            let params = new URLSearchParams(url.search);
+
+            params.set("canvasCode", canvasCode);
+            url.search = params.toString();
+
+            window.location.href = url.toString();
+
             break;
         /* Receives canvas that needs to be drawn*/
         case "canvasResponse":
-            console.log(jsonData)
-            loadCanvas(jsonData.description);
+            loadCanvas(jsonData);
             break;
         /* Updates the canvas, whenever a new pixel is placed.*/
         case "canvasUpdate":
+            console.log("canvas has been updated");
             drawRect(
                 jsonData.position[0]
                 ,jsonData.position[1],
-                1, 1,
                 jsonData.color
             );
-            break;
-        /* Responds to draw request sent by client*/
-        case "drawResponse":
-            if(TRUE_REGEX.test(jsonData.description)) {
-                drawRect(
-                    lastRequestedX,
-                    lastRequestedY,
-                    1, 1,
-                    lastRequestedColor
-                );
-            }
             break;
     }
 }
@@ -83,8 +85,6 @@ function sendDrawRequest(userid, color, x, y){
         return false;
     }
 
-    lastRequestedColor = selectedColor;
-
     const drawRequest = {
         requestType: "draw",
         color: color,
@@ -95,6 +95,16 @@ function sendDrawRequest(userid, color, x, y){
     socket.send(JSON.stringify(drawRequest))
 }
 
+function sendCanvasRequest(){
+
+    const canvasRequest = {
+        requestType: "canvas",
+        canvasCode: canvasCode,
+    };
+
+    socket.send(JSON.stringify(canvasRequest))
+}
+
 function createNewSession(){
     const request = {
         requestType: "session",
@@ -103,16 +113,31 @@ function createNewSession(){
 }
 
 function canDrawAgain(){
-    return lastDrawTime === null ||  new Date().getSeconds() <= lastDrawTime;
+    return lastDrawTime === null || (new Date().getTime() - lastDrawTime) > 5000;
 }
 
 function loadCanvas(canvasData) {
-    console.log(JSON.parse(canvasData));
+
+    const positions = JSON.parse(canvasData.canvasData);
+
+    try{
+        for(let i = 0; i < positions.length; i++) {
+            let data = positions[i];
+            let x = data["position"][0];
+            let y = data["position"][1];
+            let color = data["color"];
+
+            drawRect(x, y, color);
+        }
+    }
+    catch(e){
+        console.log("Could not load pixel: " + e);
+    }
 }
 
-function drawRect(x, y, width, height, color) {
+function drawRect(x, y, color) {
     ctx.fillStyle = color
-    ctx.fillRect( x, y, width, height )
+    ctx.fillRect( x, y, 1, 1 )
 }
 
 /* Canvas */
@@ -120,7 +145,7 @@ function drawRect(x, y, width, height, color) {
 canvas = document.getElementById("canvas");
 let ctx = canvas.getContext('2d')
 
-document.addEventListener('click', function (e) {
+canvas.addEventListener('click', function (e) {
 
     const rect = canvas.getBoundingClientRect();
     const elementRelativeX = e.clientX - rect.left;
@@ -138,4 +163,13 @@ document.addEventListener('click', function (e) {
     )
 })
 
+window.addEventListener('load', function() {
+    if(canvasCode != null){
+        setTimeout(function () {
+            if(socket.readyState === WebSocket.OPEN){
+                sendCanvasRequest();
+            }
+        }, 5000);
+    }
+})
 

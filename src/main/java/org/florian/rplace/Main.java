@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
-import io.javalin.http.Context;
 import io.javalin.websocket.WsContext;
 
 import io.javalin.websocket.WsMessageContext;
@@ -34,7 +33,7 @@ public class Main {
         Javalin app = Javalin.create().start(8888);
 
         // WebSocket endpoints
-        app.ws("/websocket", ws -> {
+        app.ws("/canvas", ws -> {
             ws.onConnect(ctx -> {
                 // TODO: In the future check the url params and create a new session
                 //       if that url doesn't exist already, if it does connect to it
@@ -47,18 +46,31 @@ public class Main {
 
                 String requestedData = ctx.message();
                 JsonNode jsonData = OBJECT_MAPPER.readTree(requestedData);
-                String requestType = jsonData.get("requestType").asText();
 
+                if(jsonData.isEmpty()){
+                    return;
+                }
+
+                String requestType = jsonData.get("requestType").asText();
                 CanvasSession session;
 
                 switch(requestType) {
 
                     case "canvas":
-                        session = getCanvasSession(ctx.sessionId());
+
+                        CanvasRequest canvasRequest = OBJECT_MAPPER.treeToValue(jsonData, CanvasRequest.class);
+                        session = getCanvasSessionByCode(canvasRequest.canvasCode());
+
                         if(session != null) {
                             try {
+                                session.addParticipant(ctx.sessionId());
+
                                 String canvasContent = OBJECT_MAPPER.writeValueAsString(session.canvasData);
-                                ctx.send(OBJECT_MAPPER.writeValueAsString(canvasContent));
+
+                                ctx.send(OBJECT_MAPPER.writeValueAsString(
+                                        new CanvasResponse("canvasResponse", canvasContent))
+                                );
+
                                 LOGGER.debug(canvasContent);
                             }
                             catch (JsonProcessingException e) {
@@ -66,12 +78,16 @@ public class Main {
                                 ctx.send(OBJECT_MAPPER.writeValueAsString(false));
                             }
                         }
+                        else{
+                            LOGGER.debug("Canvas request failed");
+                            ctx.send(OBJECT_MAPPER.writeValueAsString(false));
+                        }
                         break;
 
                     case "draw":
                         DrawRequest drawRequest = OBJECT_MAPPER.treeToValue(jsonData, DrawRequest.class);
 
-                        session = getCanvasSession(ctx.sessionId());
+                        session = getCanvasSessionByID(ctx.sessionId());
 
                         if(session != null) {
                             int[] position = drawRequest.position();
@@ -93,30 +109,31 @@ public class Main {
                                 for(WsContext user :  USERS){
                                     user.send(
                                             OBJECT_MAPPER.writeValueAsString(
-                                                    new DrawUpdate("drawResponse", position, color)
+                                                    new DrawUpdate("canvasUpdate", position, color)
                                         )
                                     );
                                 }
+                                LOGGER.debug("Successfully drawn");
                             }
                             catch (Error e){
                                 LOGGER.debug(e);
-
                                 cancelDrawResponse(ctx);
                                 return;
                             }
                         }
                         else {
+                            LOGGER.debug("Draw request failed");
                             cancelDrawResponse(ctx);
                         }
                         break;
 
                     case "session":
                         ctx.send(OBJECT_MAPPER.writeValueAsString(new SessionResponse(
-                                "SessionResponse", generateCanvasSession(ctx.sessionId())))
+                                "sessionResponse",
+                                generateCanvasSession(ctx.sessionId())))
                         );
                         break;
                 }
-                System.out.println("Received message: " + ctx.message());
             });
 
             ws.onClose(ctx -> {
@@ -132,7 +149,7 @@ public class Main {
 
     }
 
-    private static CanvasSession getCanvasSession(String participantID) {
+    private static CanvasSession getCanvasSessionByID(String participantID) {
         for(CanvasSession session : ACTIVE_CANVAS_SESSIONS){
             for( String participant :session.getSessionParticipants()){
                 if(participant.equals(participantID)){
@@ -143,32 +160,43 @@ public class Main {
         return null;
     }
 
+    private static CanvasSession getCanvasSessionByCode(String canvasCode) {
+        for(CanvasSession session : ACTIVE_CANVAS_SESSIONS){
+            if(session.canvasCode.equals(canvasCode)){
+                return session;
+            }
+        }
+        return null;
+    }
+
+
+
     private static String generateCanvasSession(String ownerID){
 
-        boolean isUniqueSessionCode;
-        String sessionCode;
+        boolean isUniqueCanvasCode;
+        String canvasCode;
 
         do {
-            sessionCode = generateSessionCode();
-            isUniqueSessionCode = true;
+            canvasCode = generateCanvasCode();
+            isUniqueCanvasCode = true;
 
             for (CanvasSession session : ACTIVE_CANVAS_SESSIONS) {
-                if (session.sessionCode.equals(sessionCode)) {
-                    isUniqueSessionCode = false;
+                if (session.canvasCode.equals(canvasCode)) {
+                    isUniqueCanvasCode = false;
                     break;
                 }
             }
         }
-        while (!isUniqueSessionCode);
+        while (!isUniqueCanvasCode);
 
-        ACTIVE_CANVAS_SESSIONS.add(new CanvasSession(sessionCode, ownerID ));
-        LOGGER.debug("Added new canvas session: " + sessionCode);
+        ACTIVE_CANVAS_SESSIONS.add(new CanvasSession(canvasCode, ownerID ));
+        LOGGER.debug("Added new canvas session: " + canvasCode);
 
-        return sessionCode;
+        return canvasCode;
 
     }
 
-    private static String generateSessionCode(){
+    private static String generateCanvasCode(){
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('A', 'Z').get();
         return generator.generate(8);

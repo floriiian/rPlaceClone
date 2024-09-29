@@ -8,13 +8,13 @@ import java.util.List;
 
 public class CanvasSession {
 
-    public String sessionCode;
+    public String canvasCode;
     public String ownerID;
     private List<String> participants = new ArrayList<>();
     public List<CanvasPixel> canvasData = new ArrayList<>();
 
     public CanvasSession(String sessionCode, String ownerID){
-        this.sessionCode = sessionCode;
+        this.canvasCode = sessionCode;
         this.ownerID = ownerID;
         this.participants.add(ownerID);
     }
