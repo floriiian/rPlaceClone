@@ -159,7 +159,7 @@ canvas.addEventListener('click', function (e) {
         const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
         const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
 
-        /* Use this logic after confirming pixel-placement
+        /* Uthis logic after confirming pixel-placement
          sendDrawRequest(
             null,
             selectedColor,
@@ -167,7 +167,7 @@ canvas.addEventListener('click', function (e) {
             Math.round(canvasRelativeY)
         );*/
 
-        const pixelSize = 25; // The size of the pixel image
+        const pixelSize = 25; // Size of ogn. Image.
         selectedPixelImage.style.left = (rect.left + elementRelativeX - pixelSize / 2) + 'px';
         selectedPixelImage.style.top = (rect.top + elementRelativeY - pixelSize / 2) + 'px';
     }
@@ -222,7 +222,7 @@ document.addEventListener('mousemove', (e) => {
     offsetX = (e.clientX - startX) / scaleFactor;
     offsetY = (e.clientY - startY) / scaleFactor;
 
-    const deadZone = 10; // Adjust the dead zone size as needed
+    const deadZone = 10;
     if (Math.abs(offsetX) < deadZone && Math.abs(offsetY) < deadZone) {
         return;
     }
