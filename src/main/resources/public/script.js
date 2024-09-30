@@ -9,11 +9,16 @@ const canvasCode = new URLSearchParams(document.location.search).get("canvasCode
 const interval = 20000;
 let pingInterval;
 let isCanvasLoaded = false;
+let lastX;
+let lastY;
 
 const canvasContainer = document.getElementById("canvas-container");
 const preLoader = document.getElementById("preloader_img");
 const selectedPixelImage = document.getElementById("selected_pixel")
 const canvas = document.getElementById("canvas");
+const footer = document.querySelector(".footer-container");
+const colorSelector = document.querySelectorAll('input[name="radio-control"]');
+
 
 /* Handlers*/
 
@@ -99,6 +104,7 @@ function sendDrawRequest(userid, color, x, y){
     };
 
     socket.send(JSON.stringify(drawRequest))
+    showFooter(false);
 }
 
 function sendCanvasRequest(){
@@ -120,6 +126,18 @@ function canDrawAgain(){
     return lastDrawTime === null || (new Date().getTime() - lastDrawTime) > 5000;
 }
 
+function showFooter(show = true){
+    if(!isCanvasLoaded){
+        return;
+    }
+    if(show){
+        new Audio("sounds/select_position.mp3").play()
+        footer.classList.add('active');
+        return;
+    }
+    footer.classList.remove('active')
+
+}
 function loadCanvas(canvasData) {
     const positions = JSON.parse(canvasData.canvasData);
     try{
@@ -159,17 +177,12 @@ canvas.addEventListener('click', function (e) {
         const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
         const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
 
-        /* Uthis logic after confirming pixel-placement
-         sendDrawRequest(
-            null,
-            selectedColor,
-            Math.round(canvasRelativeX),
-            Math.round(canvasRelativeY)
-        );*/
-
         const pixelSize = 25; // Size of ogn. Image.
         selectedPixelImage.style.left = (rect.left + elementRelativeX - pixelSize / 2) + 'px';
         selectedPixelImage.style.top = (rect.top + elementRelativeY - pixelSize / 2) + 'px';
+
+        lastX = Math.round(canvasRelativeX);
+        lastY = Math.round(canvasRelativeY);
     }
 });
 
@@ -236,6 +249,17 @@ document.addEventListener('mouseup', () => {
     initialOffsetX += offsetX;
     initialOffsetY += offsetY;
 });
+
+
+colorSelector.forEach(radio => {
+    radio.addEventListener('click', (e) => {
+        const label = e.target.closest('.radio-button-label');
+        const swatch = label.querySelector('.swatch');
+
+        selectedColor = swatch.dataset.color;
+    });
+});
+
 window.addEventListener('load', function() {
     if(canvasCode != null){
         setTimeout(function () {
