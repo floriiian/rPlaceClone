@@ -8,9 +8,12 @@ const canvasCode = new URLSearchParams(document.location.search).get("canvasCode
 
 const interval = 20000;
 let pingInterval;
+let isCanvasLoaded = false;
 
 const canvasContainer = document.getElementById("canvas-container");
 const preLoader = document.getElementById("preloader_img");
+const selectedPixelImage = document.getElementById("selected_pixel")
+const canvas = document.getElementById("canvas");
 
 /* Handlers*/
 
@@ -130,6 +133,7 @@ function loadCanvas(canvasData) {
         }
         preLoader.style.display = "none";
         canvasContainer.style.display = "fixed";
+        isCanvasLoaded = true;
     }
     catch(e){
         console.log("Could not load pixel: " + e);
@@ -143,29 +147,95 @@ function drawRect(x, y, color) {
 
 /* Canvas */
 
-canvas = document.getElementById("canvas");
 let ctx = canvas.getContext('2d')
 
 canvas.addEventListener('click', function (e) {
-    const rect = canvas.getBoundingClientRect();
+    if(!isDragging && isCanvasLoaded){
+        const rect = canvas.getBoundingClientRect();
 
-    const elementRelativeX = e.clientX - rect.left;
-    const elementRelativeY = e.clientY - rect.top;
+        const elementRelativeX = e.clientX - rect.left;
+        const elementRelativeY = e.clientY - rect.top;
 
-    const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
-    const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
+        const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
+        const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
 
-    console.log(Math.round(canvasRelativeX), Math.round(canvasRelativeY));
+        /* Use this logic after confirming pixel-placement
+         sendDrawRequest(
+            null,
+            selectedColor,
+            Math.round(canvasRelativeX),
+            Math.round(canvasRelativeY)
+        );*/
 
-    sendDrawRequest(
-        null,
-        selectedColor,
-        Math.round(canvasRelativeX),
-        Math.round(canvasRelativeY)
-    );
+        const pixelSize = 25; // The size of the pixel image
+        selectedPixelImage.style.left = (rect.left + elementRelativeX - pixelSize / 2) + 'px';
+        selectedPixelImage.style.top = (rect.top + elementRelativeY - pixelSize / 2) + 'px';
+    }
 });
 
+let scaleFactor = 1;
+let initialOffsetX = 0;
+let initialOffsetY = 0;
 
+let isZooming = false;
+let targetScaleFactor;
+
+canvasContainer.onwheel = zoom;
+
+function zoom(event) {
+    event.preventDefault();
+
+    targetScaleFactor = scaleFactor + event.deltaY * -0.01;
+    targetScaleFactor = Math.min(Math.max(1, targetScaleFactor), 10);
+
+    isZooming = true;
+    requestAnimationFrame(zoomAnimation);
+}
+
+function zoomAnimation() {
+    if (!isZooming) return;
+
+    scaleFactor += (targetScaleFactor - scaleFactor) * 0.1;
+
+    canvasContainer.style.transform = `scale(${scaleFactor}) translate(${initialOffsetX}px, ${initialOffsetY}px)`;
+
+    if (Math.abs(targetScaleFactor - scaleFactor) > 0.01) {
+        requestAnimationFrame(zoomAnimation);
+    } else {
+        isZooming = false;
+    }
+}
+
+let isDragging = false;
+let startX, startY;
+let offsetX = 0, offsetY = 0;
+
+canvasContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    offsetX = (e.clientX - startX) / scaleFactor;
+    offsetY = (e.clientY - startY) / scaleFactor;
+
+    const deadZone = 10; // Adjust the dead zone size as needed
+    if (Math.abs(offsetX) < deadZone && Math.abs(offsetY) < deadZone) {
+        return;
+    }
+
+    canvasContainer.style.transform = `scale(${scaleFactor}) translate(${initialOffsetX + offsetX}px, ${initialOffsetY + offsetY}px)`;
+});
+
+document.addEventListener('mouseup', () => {
+    isDragging = false;
+
+    initialOffsetX += offsetX;
+    initialOffsetY += offsetY;
+});
 window.addEventListener('load', function() {
     if(canvasCode != null){
         setTimeout(function () {

@@ -21,7 +21,7 @@ public class Main {
     static Logger LOGGER = LogManager.getLogger();
     static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private static Set<WsContext> USERS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static Set<WsContext> USERS = new HashSet<>();
     private static List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
 
     // Ensures that adding, removing, or iterating over the user's
@@ -188,10 +188,10 @@ public class Main {
 
     private static String generateCanvasSession(String ownerID){
 
-        boolean isUniqueCanvasCode;
-        String canvasCode;
-
-        do {
+        boolean isUniqueCanvasCode = false;
+        String canvasCode = "";
+        
+        while(!isUniqueCanvasCode){
             canvasCode = generateCanvasCode();
             isUniqueCanvasCode = true;
 
@@ -202,10 +202,9 @@ public class Main {
                 }
             }
         }
-        while (!isUniqueCanvasCode);
 
         ACTIVE_CANVAS_SESSIONS.add(new CanvasSession(canvasCode, ownerID ));
-        LOGGER.debug("Added new canvas session: " + canvasCode);
+        LOGGER.debug("Added new canvas session: {}", canvasCode);
 
         return canvasCode;
 
