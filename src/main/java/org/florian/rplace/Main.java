@@ -14,7 +14,6 @@ import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
 

@@ -1,14 +1,15 @@
 
 const socket = new WebSocket("ws://localhost:8888/canvas");
-const startURL = "http://localhost:63342/rPlaceClone/src/main/resources/public/client.html"
+const startURL = "http://localhost:63342/rPlaceClone/src/main/resources/public/canvas.html"
 
 let lastDrawTime = null;
 let selectedColor = "#000"; // Save selected color
 const canvasCode = new URLSearchParams(document.location.search).get("canvasCode");
 
-const interval = 20000;
+const interval = 15000;
 let pingInterval;
 let isCanvasLoaded = false;
+let colorPickerOpen = false;
 let lastX;
 let lastY;
 
@@ -18,6 +19,41 @@ const selectedPixelImage = document.getElementById("selected_pixel")
 const canvas = document.getElementById("canvas");
 const footer = document.querySelector(".footer-container");
 const colorSelector = document.querySelectorAll('input[name="radio-control"]');
+const xy_display = document.getElementById("xy_display");
+const placeButton = document.getElementById("place_button");
+const placeButtonText = document.getElementById("place_text");
+
+/* Time Checker */
+
+const timeChecker = setInterval(function () {
+
+    if(lastDrawTime == null){
+        return;
+    }
+
+    let currentTime = new Date().getTime();
+    let timeDifference = (lastDrawTime + 300000) - currentTime ;
+
+    if(timeDifference <= 0){
+        placeButtonText.innerText = "Place!";
+        placeButton.style.backgroundColor = "#d73a00";
+        placeButton.disabled = false;
+        return;
+    }
+
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+    let seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+
+    placeButtonText.innerText = minutes + " : " + seconds;
+    placeButton.style.backgroundColor = "#6d6e6d";
+    placeButton.disabled = true;
+
+
+}, 1000);
+
 
 
 /* Handlers*/
@@ -77,7 +113,6 @@ socket.onmessage = function (event) {
             break;
         /* Updates the canvas, whenever a new pixel is placed.*/
         case "canvasUpdate":
-            console.log("canvas has been updated");
             drawRect(
                 jsonData.position[0]
                 ,jsonData.position[1],
@@ -86,7 +121,6 @@ socket.onmessage = function (event) {
             break;
     }
 }
-
 /* Functions used by the handlers */
 
 function sendDrawRequest(userid, color, x, y){
@@ -105,6 +139,9 @@ function sendDrawRequest(userid, color, x, y){
 
     socket.send(JSON.stringify(drawRequest))
     showFooter(false);
+    lastDrawTime = new Date().getTime();
+
+    // TODO: Change Style
 }
 
 function sendCanvasRequest(){
@@ -123,19 +160,28 @@ function createNewSession(){
 }
 
 function canDrawAgain(){
-    return lastDrawTime === null || (new Date().getTime() - lastDrawTime) > 5000;
+    return lastDrawTime === null || (new Date().getTime() - lastDrawTime) >= 300000;
 }
 
 function showFooter(show = true){
     if(!isCanvasLoaded){
         return;
     }
-    if(show){
+    if(show && !colorPickerOpen){
+        placeButton.style.opacity = "0"
+        placeButton.style.pointerEvents = "none"
         new Audio("sounds/select_position.mp3").play()
         footer.classList.add('active');
-        return;
+        colorPickerOpen = true;
+    }else{
+        setTimeout(function() {
+            placeButton.style.opacity = "1";
+            placeButton.style.pointerEvents = "auto"
+        }, 300);
+        footer.classList.remove('active')
+        new Audio("sounds/cancel.mp3").play();
+        colorPickerOpen = false;
     }
-    footer.classList.remove('active')
 
 }
 function loadCanvas(canvasData) {
@@ -151,6 +197,11 @@ function loadCanvas(canvasData) {
         }
         preLoader.style.display = "none";
         canvasContainer.style.display = "fixed";
+        selectedPixelImage.style.display = "block";
+        selectedPixelImage.style.left = (800 - 25 /2) + 'px';
+        selectedPixelImage.style.top = (800 - 25 / 2) + 'px';
+        placeButton.style.display = "block";
+
         isCanvasLoaded = true;
     }
     catch(e){
@@ -177,12 +228,14 @@ canvas.addEventListener('click', function (e) {
         const canvasRelativeX = elementRelativeX * (canvas.width / rect.width);
         const canvasRelativeY = elementRelativeY * (canvas.height / rect.height);
 
-        const pixelSize = 25; // Size of ogn. Image.
-        selectedPixelImage.style.left = (rect.left + elementRelativeX - pixelSize / 2) + 'px';
-        selectedPixelImage.style.top = (rect.top + elementRelativeY - pixelSize / 2) + 'px';
+        // 25 = 25px image size
+        selectedPixelImage.style.left = (rect.left + elementRelativeX - 25 / 2) + 'px';
+        selectedPixelImage.style.top = (rect.top + elementRelativeY - 25 / 2) + 'px';
 
         lastX = Math.round(canvasRelativeX);
         lastY = Math.round(canvasRelativeY);
+
+        xy_display.innerText =  `(${lastX},${lastY})`
     }
 });
 
@@ -257,6 +310,7 @@ colorSelector.forEach(radio => {
         const swatch = label.querySelector('.swatch');
 
         selectedColor = swatch.dataset.color;
+        new Audio("sounds/switch_color.mp3").play();
     });
 });
 
@@ -266,7 +320,7 @@ window.addEventListener('load', function() {
             if(socket.readyState === WebSocket.OPEN){
                 sendCanvasRequest();
             }
-        }, 5000);
+        }, 2500);
     }
 })
 

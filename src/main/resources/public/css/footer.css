@@ -75,9 +75,9 @@ input:checked + .swatch {
 
 #button-container {
     position: absolute;
-    bottom: -10px;
+    bottom: 10px; /* Change from -10px to 10px to move it above the bottom edge */
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, 0); /* Align properly horizontally */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,6 +90,7 @@ input:checked + .swatch {
     width: 250px;
     height: 40px;
     border: 0.1em solid #000000;
+    transition: 0.05s;
 }
 
 #pixel_confirmation img {
@@ -103,9 +104,27 @@ input:checked + .swatch {
     align-content: center;
     width: 250px;
     height: 40px;
+    transition: 0.05s;
 }
 
 #pixel_cancel img {
     width: 25px;
     height: 25px;
+    z-index: 2
+}
+
+#pixel_cancel:hover{
+    transform: scale(1.02);
+    background-color: #e5e5e5;
+}
+#pixel_cancel:active{
+    transform: scale(0.95);
+}
+
+#pixel_confirmation:hover{
+    transform: scale(1.02);
+    background-color: #802128;
+}
+#pixel_confirmation:active{
+    transform: scale(0.95);
 }
