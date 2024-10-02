@@ -75,8 +75,8 @@ canvas {
     position: fixed;
     z-index: 5;
     bottom: 20px;
-    left: 50%; /* Position the button horizontally at the center */
-    transform: translateX(-50%); /* Offset by 50% of its width to fully center it */
+    left: 50%;
+    transform: translateX(-50%); 
 
     box-shadow: rgba(0, 0, 0, 0.47) 8px 8px 0;
     border: black 3px solid;
@@ -93,12 +93,12 @@ canvas {
 }
 
 #place_button:hover {
-    transform: translateX(-50%) scale(101%); /* Keep the centering effect on hover */
+    transform: translateX(-50%) scale(101%); 
     background-color: #b53300;
 }
 #place_button:active {
     background-color: #962a00;
-    transform: translateX(-50%) scale(98%); /* Keep the centering effect on hover */
+    transform: translateX(-50%) scale(98%);
 }
 
 
