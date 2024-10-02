@@ -187,17 +187,13 @@ function loadCanvas(canvasData) {
     const positions = JSON.parse(canvasData.canvasData);
 
     try{
-        for(let i = 0; i < positions.length; i++) {
-            // TODO: EDIT
-            let data = positions;
-            console.log(data);
-            let x = data["x"];
-            let y = data["y"];
-            let color = data["color"];
+        for(let i = 0; i < positions.length; i++){
 
-            console.log(x);
+                let x = positions[i]["position"]["x"];
+                let y = positions[i]["position"]["y"];
+                let color = positions[i]["color"];
 
-            drawRect(x, y, color);
+                drawRect(x, y, color);
         }
         preLoader.style.display = "none";
         canvasContainer.style.display = "fixed";

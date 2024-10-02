@@ -11,6 +11,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import org.florian.rplace.canvas.CanvasPixel;
 import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
 
@@ -65,7 +66,17 @@ public class Main {
                             try {
                                 session.addParticipant(ctx.sessionId());
 
-                                String canvasContent = OBJECT_MAPPER.writeValueAsString(session.canvasData);
+                                ArrayList<CanvasPixel> canvasPixels = new ArrayList<>();
+
+                                for(CanvasPixel[] a : session.canvasData){
+                                    for(CanvasPixel b : a){
+                                        if(b != null){
+                                            canvasPixels.add(b);
+                                        }
+                                    }
+                                }
+
+                                String canvasContent = OBJECT_MAPPER.writeValueAsString(canvasPixels);
 
                                 ctx.send(OBJECT_MAPPER.writeValueAsString(
                                         new CanvasResponse("canvasResponse", canvasContent))
