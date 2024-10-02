@@ -3,15 +3,14 @@ package org.florian.rplace.session;
 import org.florian.rplace.canvas.CanvasPixel;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class CanvasSession {
 
     public String canvasCode;
     public String ownerID;
-    private List<String> participants = new ArrayList<>();
-    public List<CanvasPixel> canvasData = new ArrayList<>();
+    private final List<String> participants = new ArrayList<>();
+    public CanvasPixel[][] canvasData = new CanvasPixel[1000][1000];
 
     public CanvasSession(String sessionCode, String ownerID){
         this.canvasCode = sessionCode;
@@ -20,26 +19,9 @@ public class CanvasSession {
     }
 
 
-    public void addPixelToCanvas(int[] pixelPosition, String color, String participantID){
+    public void addPixelToCanvas(int x, int y, String color, String participantID){
 
-        boolean pixelReplaced = false;
-        Iterator<CanvasPixel> iterator = canvasData.iterator();
-
-        // Using iterators makes it possible to delete values while iterating,
-        // otherwise ConcurrentModificationException occurs.
-
-        while (iterator.hasNext()) {
-            CanvasPixel data = iterator.next();
-            int[] currentPixelPosition = data.getPosition();
-            if (currentPixelPosition[0] == pixelPosition[0] && currentPixelPosition[1] == pixelPosition[1]) {
-                iterator.remove();
-                pixelReplaced = true;
-                break;
-            }
-        }
-        if(!pixelReplaced){
-            canvasData.add(new CanvasPixel(participantID, pixelPosition, color));
-        }
+        canvasData[x][y] = new CanvasPixel(participantID, x , y, color);
     }
 
     public List<String> getSessionParticipants(){

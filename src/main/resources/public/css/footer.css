@@ -1,6 +1,6 @@
 .footer-container {
     position: fixed;
-    bottom: -100px;
+    bottom: -100px; /* Initially off-screen */
     left: 0;
     width: 100%;
     flex-direction: column;
@@ -8,14 +8,14 @@
     align-items: center;
     background-color: #f5f5f5;
     z-index: 4;
-    opacity: 0; 
-    transition: bottom 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    opacity: 0; /* Initially invisible */
+    transition: bottom 0.5s ease-in-out, opacity 0.5s ease-in-out; /* Smooth transition */
     pointer-events: none;
 }
 
 .footer-container.active {
-    bottom: 0; 
-    opacity: 1; 
+    bottom: 0; /* Slide it up */
+    opacity: 1; /* Make it visible */
     pointer-events: auto;
 }
 
@@ -75,9 +75,9 @@ input:checked + .swatch {
 
 #button-container {
     position: absolute;
-    bottom: 10px; 
+    bottom: 10px; /* Change from -10px to 10px to move it above the bottom edge */
     left: 50%;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 0); /* Align properly horizontally */
     display: flex;
     align-items: center;
     justify-content: center;

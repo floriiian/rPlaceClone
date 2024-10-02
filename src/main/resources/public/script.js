@@ -54,8 +54,6 @@ const timeChecker = setInterval(function () {
 
 }, 1000);
 
-
-
 /* Handlers*/
 
 socket.onopen = function () {
@@ -114,8 +112,8 @@ socket.onmessage = function (event) {
         /* Updates the canvas, whenever a new pixel is placed.*/
         case "canvasUpdate":
             drawRect(
-                jsonData.position[0]
-                ,jsonData.position[1],
+                jsonData.x
+                ,jsonData.y,
                 jsonData.color
             );
             break;
@@ -133,7 +131,8 @@ function sendDrawRequest(userid, color, x, y){
     const drawRequest = {
         requestType: "draw",
         color: color,
-        position: [x, y],
+        x: x,
+        y: y,
         date: Math.floor(new Date().getTime() / (1000 * 60))
     };
 
@@ -186,12 +185,17 @@ function showFooter(show = true){
 }
 function loadCanvas(canvasData) {
     const positions = JSON.parse(canvasData.canvasData);
+
     try{
         for(let i = 0; i < positions.length; i++) {
-            let data = positions[i];
-            let x = data["position"][0];
-            let y = data["position"][1];
+            // TODO: EDIT
+            let data = positions;
+            console.log(data);
+            let x = data["x"];
+            let y = data["y"];
             let color = data["color"];
+
+            console.log(x);
 
             drawRect(x, y, color);
         }

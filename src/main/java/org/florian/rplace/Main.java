@@ -10,8 +10,11 @@ import io.javalin.websocket.WsMessageContext;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
 
@@ -20,16 +23,17 @@ public class Main {
     static Logger LOGGER = LogManager.getLogger();
     static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private static Set<WsContext> USERS = new HashSet<>();
-    private static List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
+    private static final Set<WsContext> USERS = new HashSet<>();
+    private static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
 
     // Ensures that adding, removing, or iterating over the user's
     // set happens safely when accessed by multiple threads. (Normal HashSet could lead to corruption)
     // A set only allows one unique entry, we don't want the same session twice.
 
-    public static void main(String[] args) {
+    public static void main() {
 
         Javalin app = Javalin.create().start(8888);
+
 
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
@@ -85,16 +89,18 @@ public class Main {
                         session = getCanvasSessionByID(ctx.sessionId());
 
                         if(session != null) {
-                            int[] position = drawRequest.position();
+                            int x = drawRequest.x();
+                            int y = drawRequest.y();
                             String color = drawRequest.color();
 
-                            if(position == null || color == null) {
+                            if(color == null) {
                                 cancelDrawResponse(ctx);
                                 return;
                             }
                             try{
                                 session.addPixelToCanvas(
-                                        position,
+                                        x,
+                                        y,
                                         color,
                                         ctx.sessionId()
                                 );
@@ -104,7 +110,7 @@ public class Main {
                                 for(WsContext user :  USERS){
                                     user.send(
                                             OBJECT_MAPPER.writeValueAsString(
-                                                    new DrawUpdate("canvasUpdate", position, color)
+                                                    new DrawUpdate("canvasUpdate", x, y, color)
                                         )
                                     );
                                 }
@@ -150,9 +156,7 @@ public class Main {
                 USERS.remove(ctx);
             });
 
-            ws.onError(ctx -> {
-                LOGGER.debug("An error occurred: {}", ctx.error());
-            });
+            ws.onError(ctx -> LOGGER.debug("An error occurred: {}", ctx.error()));
         });
         // app.get("/", ctx -> ctx.result("WebSocket server is running on ws://localhost:4124141221124/websocket"));
 

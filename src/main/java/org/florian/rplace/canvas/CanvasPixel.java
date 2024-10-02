@@ -2,13 +2,14 @@ package org.florian.rplace.canvas;
 
 public class CanvasPixel {
 
-    private String owner;
-    private int[] position;
-    private String color;
+    private final String owner;
+    private final String color;
+    private final PixelPosition position;
 
-    public CanvasPixel(String owner, int[] position, String color) {
+
+    public CanvasPixel(String owner, int x, int y, String color) {
         this.owner = owner;
-        this.position = position;
+        this.position = new PixelPosition(x, y);
         this.color = color;
     }
 
@@ -20,13 +21,7 @@ public class CanvasPixel {
         return color;
     }
 
-    public int[] getPosition() {
+    public PixelPosition getPosition() {
         return position;
-    }
-
-    public void updateCanvasPixel(String owner, int[] position, String color){
-        this.owner = owner;
-        this.position = position;
-        this.color = color;
     }
 }
