@@ -27,10 +27,6 @@ public class Main {
     private static final Set<WsContext> USERS = new HashSet<>();
     private static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
 
-    // Ensures that adding, removing, or iterating over the user's
-    // set happens safely when accessed by multiple threads. (Normal HashSet could lead to corruption)
-    // A set only allows one unique entry, we don't want the same session twice.
-
     public static void main() {
 
         Javalin app = Javalin.create().start(8888);
@@ -40,7 +36,7 @@ public class Main {
         app.ws("/canvas", ws -> {
             ws.onConnect(ctx -> {
                 LOGGER.debug("User: {} connected.", ctx.sessionId());
-                USERS.add(ctx); // Add the user to the set
+                USERS.add(ctx);
             });
 
             ws.onMessage(ctx -> {
