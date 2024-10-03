@@ -23,19 +23,24 @@ public class Database {
             Statement stmt = CONNECTION.createStatement();
 
             String createStorage =
-                    "CREATE TABLE IF NOT EXISTS canvasStorage" + "(id INT PRIMARY KEY NOT NULL," + "canvas_code TEXT NOT NULL)";
+                    "CREATE TABLE IF NOT EXISTS canvasStorage" + "(id INTEGER PRIMARY KEY AUTOINCREMENT," + "canvas_code TEXT NOT NULL)";
             stmt.executeUpdate(createStorage);
             stmt.close();
 
-            // TODO: Fix this syntax
-
             String createPixelStorage = "CREATE TABLE IF NOT EXISTS pixelStorage (" +
-                    "pixel_id SERIAL PRIMARY KEY " + "canvas_code INT NOT NULL, " +
-                    "x INT NOT NULL, " + "y INT NOT NULL, " + "color TEXT NOT NULL, " + "userid TEXT, " +
-                    "FOREIGN KEY (canvas_code) REFERENCES canvasStorage(canvas_code)" +"')";
+                    "pixel_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "canvas_code TEXT NOT NULL, " +
+                    "x INT NOT NULL, " +
+                    "y INT NOT NULL, " +
+                    "color TEXT NOT NULL, " +
+                    "userid TEXT NOT NULL, " +
+                    "FOREIGN KEY (canvas_code) REFERENCES canvasStorage(canvas_code))";
 
             stmt.executeUpdate(createPixelStorage);
             stmt.close();
+
+            addCanvasToDatabase("BR12N");
+            addPixelToCanvas("BR12N", 2, 2, "#21124F", "asa");
 
         }
         catch(Exception e) {
@@ -47,7 +52,7 @@ public class Database {
         try {
             Statement stmt = CONNECTION.createStatement();
 
-            String newCanvas = "INSERT INTO canvasStorage (code) VALUES ('" + canvasCode + "')";
+            String newCanvas = "INSERT INTO canvasStorage (canvas_code) VALUES ('" + canvasCode + "')";
 
             stmt.executeUpdate(newCanvas);
             stmt.close();
@@ -65,18 +70,19 @@ public class Database {
         try {
             Statement stmt = CONNECTION.createStatement();
 
-            String checkPixelExistence = "SELECT pixel_id FROM pixelStorage WHERE canvas_code = " + canvasCode + " AND x = " + x + " AND y = " + y;
+            String checkPixelExistence = "SELECT pixel_id FROM pixelStorage WHERE canvas_code = " + "'" + canvasCode + "'" +" AND x = " + x + " AND y = " + y;
             ResultSet resultSet = stmt.executeQuery(checkPixelExistence);
 
+
             if (resultSet.next()) {
-                String pixelUpdate = "UPDATE pixel SET color = '" + color + "', userid = '" + userId + "' " +
-                        "WHERE canvas_code = " + canvasCode + " AND x = " + x + " AND y = " + y;
+                String pixelUpdate = "UPDATE pixelStorage SET color = '" + color + "', userid = '" + userId + "' " +
+                        "WHERE canvas_code = " + "'" + canvasCode + "'" + " AND x = " + x + " AND y = " + y;
                 stmt.executeUpdate(pixelUpdate);
                 LOGGER.debug("Pixel has been updated.");
             }
             else {
-                String insertNewPixel = "INSERT INTO pixel (canvas_code, x, y, color, userid) " +
-                        "VALUES (" + canvasCode + ", " + x + ", " + y + ", '" + color + "', '" + userId + "')";
+                String insertNewPixel = "INSERT INTO pixelStorage (canvas_code, x, y, color, userid) " +
+                        "VALUES (" + "'" +canvasCode + "'" + ", " + x + ", " + y + ", '" + color + "', '" + userId + "')";
                 stmt.executeUpdate(insertNewPixel);
                 LOGGER.debug("Pixel has been added.");
             }
