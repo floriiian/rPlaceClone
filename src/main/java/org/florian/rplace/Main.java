@@ -15,8 +15,6 @@ import org.florian.rplace.canvas.CanvasPixel;
 import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.*;
 
 public class Main {
@@ -30,7 +28,6 @@ public class Main {
     public static void main() {
 
         Javalin app = Javalin.create().start(8888);
-
 
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
