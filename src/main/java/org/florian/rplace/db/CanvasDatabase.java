@@ -6,6 +6,7 @@ import org.florian.rplace.session.CanvasSession;
 
 import java.io.*;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CanvasDatabase {
@@ -22,8 +23,11 @@ public class CanvasDatabase {
 
             Statement stmt = CONNECTION.createStatement();
 
-            String createStorage =
-                    "CREATE TABLE IF NOT EXISTS canvasStorage" + "(id INTEGER PRIMARY KEY AUTOINCREMENT," + "canvas_code TEXT NOT NULL," + "canvas_data BLOB NOT NULL" +")";
+            String createStorage = "CREATE TABLE IF NOT EXISTS canvasStorage"
+                            + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                            + "canvas_code TEXT NOT NULL,"
+                            + "canvas_data BLOB NOT NULL"
+                            +")";
             stmt.executeUpdate(createStorage);
             stmt.close();
             return true;
@@ -137,6 +141,25 @@ public class CanvasDatabase {
             LOGGER.debug(e);
         }
         return null;
+    }
+
+    public static ArrayList<String> getCanvasCodesFromDatabase(){
+
+        ArrayList<String> canvasCodes = new ArrayList<>();
+
+        try{
+            Statement stmt = CONNECTION.createStatement();
+            ResultSet rs =  stmt.executeQuery( "SELECT canvas_code FROM canvasStorage;");
+
+            while(rs.next()){
+                canvasCodes.add(rs.getString("canvas_code"));
+            }
+        }
+        catch(Exception e){
+            LOGGER.debug(e);
+            return null;
+        }
+        return canvasCodes;
     }
 
 }

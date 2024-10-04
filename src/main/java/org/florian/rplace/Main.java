@@ -28,7 +28,7 @@ public class Main {
     private static final Set<WsContext> USERS = new HashSet<>();
     public static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
 
-    public static void main() throws IOException {
+    public static void main(){
 
         Javalin app = Javalin.create().start(8888);
 
@@ -36,8 +36,21 @@ public class Main {
             return;
         }
         else{
-            // getCanvasBytesFromDatabase
-            
+            ArrayList<String> canvasCodes = CanvasDatabase.getCanvasCodesFromDatabase();
+
+            if(canvasCodes != null){
+                canvasCodes.forEach(canvasCode -> {
+
+                    byte[] canvasBytes = CanvasDatabase.getCanvasBytesFromDatabase(canvasCode);
+
+                    try {
+                        ACTIVE_CANVAS_SESSIONS.add(CanvasDatabase.getCanvasDataFromBytes(canvasBytes));
+                    }
+                    catch (Exception e) {
+                        LOGGER.debug(e);
+                    }
+                });
+            }
         }
 
         // Repeating Task that backs up the canvas's regularly
