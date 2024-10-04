@@ -154,10 +154,7 @@ public class Main {
                                         )
                                     );
                                 }
-
-                                convertCanvasSession(session);
-
-                                LOGGER.debug("Successfully drawn");
+                                LOGGER.debug("Successfully added a pixel.");
                             }
                             catch (Error e){
                                 LOGGER.debug(e);

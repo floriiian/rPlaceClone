@@ -80,7 +80,7 @@ public class CanvasDatabase {
                 byte [] canvasData = getCanvasDataAsBytes(session);
 
                 Statement stmt = CONNECTION.createStatement();
-                ResultSet rs = stmt.executeQuery( "SELECT id FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'" + ")";
+                ResultSet rs = stmt.executeQuery( "SELECT id FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'" + ")");
 
                 if ( rs.next() ) {
                     String newCanvas = "UPDATE canvasStorage WHERE cavas_code =" + "'"+canvasCode+"'"+"VALUES ('" + canvasData + "')";
@@ -124,7 +124,7 @@ public class CanvasDatabase {
             byte [] canvasData;
 
             Statement stmt = CONNECTION.createStatement();
-            ResultSet rs = stmt.executeQuery( "SELECT canvas_data FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'" + ")";
+            ResultSet rs = stmt.executeQuery( "SELECT canvas_data FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'");
 
             if ( rs.next() ) {
                 untreatedString = rs.getString("canvas_code");
