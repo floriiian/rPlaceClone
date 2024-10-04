@@ -2,20 +2,19 @@ package org.florian.rplace.session;
 
 import org.florian.rplace.canvas.CanvasPixel;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CanvasSession {
+public class CanvasSession implements Serializable {
 
     public String canvasCode;
-    public String ownerID;
     private final List<String> participants = new ArrayList<>();
     public CanvasPixel[][] canvasData = new CanvasPixel[1000][1000];
 
-    public CanvasSession(String sessionCode, String ownerID){
+    public CanvasSession(String sessionCode, String creatorID){
         this.canvasCode = sessionCode;
-        this.ownerID = ownerID;
-        this.participants.add(ownerID);
+        this.participants.add(creatorID);
     }
 
 

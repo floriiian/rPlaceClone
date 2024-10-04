@@ -12,22 +12,45 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.florian.rplace.canvas.CanvasPixel;
+import org.florian.rplace.db.CanvasDatabase;
 import org.florian.rplace.json.*;
 import org.florian.rplace.session.CanvasSession;
 
+import java.io.*;
 import java.util.*;
 
 public class Main {
 
+    static Timer TIMER = new Timer();
     static Logger LOGGER = LogManager.getLogger();
     static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final Set<WsContext> USERS = new HashSet<>();
-    private static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
+    public static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
 
-    public static void main() {
+    public static void main() throws IOException {
 
         Javalin app = Javalin.create().start(8888);
+
+        if(!CanvasDatabase.initiateDatabase()){
+            return;
+        }
+        else{
+            // getCanvasBytesFromDatabase
+            
+        }
+
+        // Repeating Task that backs up the canvas's regularly
+        TIMER.schedule(new TimerTask() {
+            public void run() {
+                try {
+                    CanvasDatabase.backupCanvasData();
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 30 * 1000);
 
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
@@ -118,6 +141,9 @@ public class Main {
                                         )
                                     );
                                 }
+
+                                convertCanvasSession(session);
+
                                 LOGGER.debug("Successfully drawn");
                             }
                             catch (Error e){
@@ -151,11 +177,7 @@ public class Main {
                         session.removeParticipant(participantID);
                         LOGGER.debug("Removed: {} from session.", participantID);
                     }
-                    else if(session.ownerID.equals(participantID)) {
-                        // TODO: Send popup to announce session termination
-                        // ctx.send(OBJECT_MAPPER.writeValueAsString("SESSION_CLOSED"));
-                        terminateCanvasSession(session);
-                    }
+                    //                         terminateCanvasSession(session);
                 }
                 USERS.remove(ctx);
             });
@@ -187,13 +209,15 @@ public class Main {
     }
 
     public static void terminateCanvasSession(CanvasSession session){
-        LOGGER.debug("Removing session: {}", session.canvasCode);
+
+        String canvasCode = session.canvasCode;
+
+        LOGGER.debug("Removing session: {}", canvasCode);
+        CanvasDatabase.removeCanvasFromDatabase(canvasCode);
         ACTIVE_CANVAS_SESSIONS.remove(session);
     }
 
-
-
-    private static String generateCanvasSession(String ownerID){
+    private static String generateCanvasSession(String creatorID) throws IOException {
 
         boolean isUniqueCanvasCode = false;
         String canvasCode = "";
@@ -210,7 +234,11 @@ public class Main {
             }
         }
 
-        ACTIVE_CANVAS_SESSIONS.add(new CanvasSession(canvasCode, ownerID ));
+        CanvasSession newCanvasSession = new CanvasSession(canvasCode, creatorID);
+
+        ACTIVE_CANVAS_SESSIONS.add(newCanvasSession);
+        CanvasDatabase.addCanvasToDatabase(newCanvasSession);
+
         LOGGER.debug("Added new canvas session: {}", canvasCode);
 
         return canvasCode;

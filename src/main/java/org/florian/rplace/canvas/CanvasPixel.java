@@ -1,6 +1,9 @@
 package org.florian.rplace.canvas;
 
-public class CanvasPixel {
+import java.io.Serial;
+import java.io.Serializable;
+
+public class CanvasPixel implements Serializable {
 
     private final String owner;
     private final String color;

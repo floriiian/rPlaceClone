@@ -1,6 +1,8 @@
 package org.florian.rplace.canvas;
 
-public record PixelPosition(int x, int y) {
+import java.io.Serializable;
+
+public record PixelPosition(int x, int y) implements Serializable {
 
     public int getX(){
         return x;
