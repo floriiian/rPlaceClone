@@ -7,7 +7,6 @@ import org.florian.rplace.session.CanvasSession;
 import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class CanvasDatabase {
 
@@ -38,34 +37,37 @@ public class CanvasDatabase {
         }
     }
 
-    public static boolean addCanvasToDatabase(CanvasSession session) throws IOException {
+    public static void addCanvasToDatabase(CanvasSession session) throws IOException {
 
         String canvasCode = session.canvasCode;
-        byte [] canvasData = getCanvasDataAsBytes(session);
+        byte[] canvasData = getCanvasDataAsBytes(session);
 
         try {
-            Statement stmt = CONNECTION.createStatement();
+            String sql = "INSERT INTO canvasStorage (canvas_code, canvas_data) VALUES (?, ?)";
 
-            String newCanvas = "INSERT INTO canvasStorage (canvas_code, canvas_data) VALUES ('" + canvasCode + "', " + Arrays.toString(canvasData) +  ")";
+            PreparedStatement preparedStmt = CONNECTION.prepareStatement(sql);
+            preparedStmt.setString(1, canvasCode);
+            preparedStmt.setBytes(2, canvasData);
 
-            stmt.executeUpdate(newCanvas);
-            stmt.close();
+            preparedStmt.executeUpdate();
+            preparedStmt.close();
         }
         catch (Exception e) {
             LOGGER.debug(e);
-            return false;
+            return;
         }
+
         LOGGER.debug("Canvas with code: {} has been successfully added.", canvasCode);
-        return true;
     }
 
     public static void  removeCanvasFromDatabase(String canvasCode){
         try{
-            Statement stmt = CONNECTION.createStatement();
-            String deleteCanvas = "DELETE FROM canvasStorage WHERE canvas_code = '" + canvasCode + "'";
+            String deleteCanvas = "DELETE FROM canvasStorage WHERE canvas_code = ?";
+            PreparedStatement preparedSTMT = CONNECTION.prepareStatement(deleteCanvas);
 
-            stmt.executeUpdate(deleteCanvas);
-            stmt.close();
+            preparedSTMT.setString(1, canvasCode);
+            preparedSTMT.executeUpdate(deleteCanvas);
+            preparedSTMT.close();
         }
         catch (Exception e){
             LOGGER.debug(e);
@@ -79,18 +81,27 @@ public class CanvasDatabase {
                 String canvasCode = session.canvasCode;
                 byte [] canvasData = getCanvasDataAsBytes(session);
 
-                Statement stmt = CONNECTION.createStatement();
-                ResultSet rs = stmt.executeQuery( "SELECT id FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'" + ")");
+                String getResults = "SELECT id FROM canvasStorage WHERE canvas_code = ?";
+                PreparedStatement preparedResults = CONNECTION.prepareStatement(getResults);
+                preparedResults.setString(1, canvasCode);
 
-                if ( rs.next() ) {
-                    String newCanvas = "UPDATE canvasStorage WHERE cavas_code =" + "'"+canvasCode+"'"+"VALUES ('" + canvasData + "')";
-                    stmt.executeUpdate(newCanvas);
-                    stmt.close();
+                ResultSet results = preparedResults.executeQuery();
+
+                if (results.next()) {
+
+                    String backupCanvas = "UPDATE canvasStorage SET canvas_data = ? WHERE canvas_code = ?";
+                    PreparedStatement preparedStmt = CONNECTION.prepareStatement(backupCanvas);
+
+                    preparedStmt.setBytes(1, canvasData);
+                    preparedStmt.setString(2, canvasCode);
+                    preparedStmt.executeUpdate();
+                    preparedStmt.close();
+                    LOGGER.debug("{} backed up.", canvasCode);
                 }
                 else{
                     LOGGER.debug("{} no longer exists.", canvasCode);
                 }
-                stmt.close();
+                preparedResults.close();
             }
             catch (Exception e){
                 LOGGER.debug(e);
@@ -120,22 +131,19 @@ public class CanvasDatabase {
 
     public static byte[] getCanvasBytesFromDatabase(String canvasCode){
         try{
-            String untreatedString;
-            byte [] canvasData;
+            String selectQuery = "SELECT canvas_data FROM canvasStorage WHERE canvas_code = ?";
+            PreparedStatement preparedStmt = CONNECTION.prepareStatement(selectQuery);
+            preparedStmt.setString(1, canvasCode);
 
-            Statement stmt = CONNECTION.createStatement();
-            ResultSet rs = stmt.executeQuery( "SELECT canvas_data FROM canvasStorage WHERE canvas_code =" + "'"  + canvasCode + "'");
+            ResultSet results = preparedStmt.executeQuery();
 
-            if ( rs.next() ) {
-                untreatedString = rs.getString("canvas_code");
-                stmt.close();
-
-            return untreatedString.getBytes();
+            if (results.next()) {
+                return results.getBytes("canvas_data");
             }
             else{
-                LOGGER.debug("{} no longer exists.", canvasCode);
+                LOGGER.debug("{} doesn't exist.", canvasCode);
             }
-            stmt.close();
+            preparedStmt.close();
         }
         catch (Exception e){
             LOGGER.debug(e);

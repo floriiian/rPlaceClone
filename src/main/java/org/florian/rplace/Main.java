@@ -54,16 +54,15 @@ public class Main {
         }
 
         // Repeating Task that backs up the canvas's regularly
-        TIMER.schedule(new TimerTask() {
+        TIMER.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 try {
                     CanvasDatabase.backupCanvasData();
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
-        }, 30 * 1000);
+        }, 30 * 1000, 30 * 1000);
 
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
