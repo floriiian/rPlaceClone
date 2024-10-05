@@ -96,10 +96,11 @@ public class CanvasDatabase {
                     preparedStmt.setString(2, canvasCode);
                     preparedStmt.executeUpdate();
                     preparedStmt.close();
-                    LOGGER.debug("{} backed up.", canvasCode);
+                    LOGGER.debug("{} has been backed up.", canvasCode);
                 }
                 else{
-                    LOGGER.debug("{} no longer exists.", canvasCode);
+                    LOGGER.debug("{} is no longer backed up.", canvasCode);
+                    Main.ACTIVE_CANVAS_SESSIONS.remove(session);
                 }
                 preparedResults.close();
             }

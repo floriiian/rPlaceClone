@@ -24,6 +24,7 @@ public class Main {
     static Timer TIMER = new Timer();
     static Logger LOGGER = LogManager.getLogger();
     static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    static final Integer BACKUP_DELAY = 30 * 1000;
 
     private static final Set<WsContext> USERS = new HashSet<>();
     public static final List<CanvasSession> ACTIVE_CANVAS_SESSIONS = new ArrayList<>();
@@ -45,6 +46,7 @@ public class Main {
 
                     try {
                         ACTIVE_CANVAS_SESSIONS.add(CanvasDatabase.getCanvasDataFromBytes(canvasBytes));
+                        LOGGER.debug("Loaded: {}" , canvasCode);
                     }
                     catch (Exception e) {
                         LOGGER.debug(e);
@@ -62,12 +64,12 @@ public class Main {
                     throw new RuntimeException(e);
                 }
             }
-        }, 30 * 1000, 30 * 1000);
+        }, BACKUP_DELAY, BACKUP_DELAY);
 
         // WebSocket endpoints
         app.ws("/canvas", ws -> {
             ws.onConnect(ctx -> {
-                LOGGER.debug("User: {} connected.", ctx.sessionId());
+                // LOGGER.debug("User: {} connected.", ctx.sessionId());
                 USERS.add(ctx);
             });
 
@@ -184,7 +186,7 @@ public class Main {
 
                     if(participants.contains(participantID)) {
                         session.removeParticipant(participantID);
-                        LOGGER.debug("Removed: {} from session.", participantID);
+                       //  LOGGER.debug("Removed: {} from session.", participantID);
                     }
                     //                         terminateCanvasSession(session);
                 }
